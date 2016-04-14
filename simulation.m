@@ -1,5 +1,5 @@
 %% constants, lenth in nm, energy in eV
-N=5001;           % # of grid points
+N=10001;           % # of grid points
 
 E_f=0.01;       % fermi energy in eV
 E_g=0.1;        % band gap in eV
@@ -21,11 +21,24 @@ lambda=sqrt(k_Si/k_ox*d_ch*d_ox/geo);
 
 
 %% create Laplacian 1d %[~,~,A] = util.laplacian(10,{'DD'})
+tic;
 L=sparse(diag(zeros(1,N)-2)+diag(zeros(1,N-1)+1,1)+diag(zeros(1,N-1)+1,-1));
-%%
-L=spdiags(zeros(1,N)-2)+spdiags(zeros(1,N-1)+1,1)+spdiags(zeros(1,N-1)+1,-1);
 L(1,2)=2;
 L(end,end-1)=2;
+toc;
+
+%% create sparse laplacian
+tic;
+super=zeros(N,1);
+super(2:end)=1;
+super(2)=2;
+sub=zeros(N,1)+1;
+sub(1:end-1)=1;
+sub(end-1)=2;
+middle=zeros(N,1);
+middle(:)=-2;
+L_sparse=spdiags([super,middle,sub],[1,0,-1],N,N);
+toc;
 
 %% x = A\b
 
@@ -35,7 +48,7 @@ l_g=2*l_ds+l_ch;
 % calculate spacing
 a=l_g/(N-1);
 % calculate indices
-n_left=floor(l_ds/a);          % source region 1 to n-left
+n_left=floor(l_ds/a);   % source region 1 to n-left
 n_right=N-n_left;       % drain region n_right-end
 
 %% assign Psi_g and Psi_b for all regions
@@ -56,9 +69,14 @@ Psi_bi(n_right:end)=-V_ds;
 rho=zeros(N,1);
 
 %% solve eq. for Psi_f
+tic;
 Psi_f=(L-diag(zeros(1,N)+1/lambda^2))\((rho+N_dot)/k_0/k_Si-1/lambda^2*(Psi_g+Psi_bi));
+toc;
 
-
+% solve sparse (much quicker!)
+tic;
+Psi_f=(L_sparse-spdiags(zeros(N,1)+1/lambda^2,[1],N,N))\((rho+N_dot)/k_0/k_Si-1/lambda^2*(Psi_g+Psi_bi));
+toc;
 %% Plot
 figure, plot((0:N-1).*a,Psi_f);
 
