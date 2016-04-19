@@ -19,14 +19,6 @@ N_dot=0;
 
 lambda=sqrt(k_Si/k_ox*d_ch*d_ox/geo); 
 
-
-%% create Laplacian 1d %[~,~,A] = util.laplacian(10,{'DD'})
-tic;
-L=sparse(diag(zeros(1,N)-2)+diag(zeros(1,N-1)+1,1)+diag(zeros(1,N-1)+1,-1));
-L(1,2)=2;
-L(end,end-1)=2;
-toc;
-
 %% create sparse laplacian
 tic;
 super=zeros(N,1);
@@ -39,8 +31,6 @@ middle=zeros(N,1);
 middle(:)=-2;
 L_sparse=spdiags([super,middle,sub],[1,0,-1],N,N);
 toc;
-
-%% x = A\b
 
 %% calculate source, drain and channel regions
 % calc overall length
@@ -55,6 +45,7 @@ n_right=N-n_left;       % drain region n_right-end
 %create empty arrays
 Psi_g=zeros(N,1);
 Psi_bi=zeros(N,1);
+
 % soure both 0
 
 % channel
@@ -65,14 +56,10 @@ Psi_bi(n_left+1:n_right-1)=E_f+E_g/2.;
 Psi_g(n_right:end) =0;
 Psi_bi(n_right:end)=-V_ds;
 
-%% create charge density
+% create charge density
 rho=zeros(N,1);
 
 %% solve eq. for Psi_f
-tic;
-Psi_f=(L-diag(zeros(1,N)+1/lambda^2))\((rho+N_dot)/k_0/k_Si-1/lambda^2*(Psi_g+Psi_bi));
-toc;
-
 % solve sparse (much quicker!)
 tic;
 Psi_f=(L_sparse-spdiags(zeros(N,1)+1/lambda^2,0,N,N))\((rho+N_dot)/k_0/k_Si-1/lambda^2*(Psi_g+Psi_bi));
