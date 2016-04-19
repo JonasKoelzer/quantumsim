@@ -67,4 +67,4 @@ toc;
 %% Plot
 figure, plot((0:N-1).*a,Psi_f);
 
-
+% TEST
