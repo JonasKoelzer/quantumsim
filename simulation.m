@@ -1,5 +1,5 @@
 %% constants, lenth in nm, energy in eV
-N=10001;           % # of grid points
+N=1001;           % # of grid points
 
 E_f=0.01;       % fermi energy in eV
 E_g=0.1;        % band gap in eV
@@ -32,7 +32,7 @@ tic;
 super=zeros(N,1);
 super(2:end)=1;
 super(2)=2;
-sub=zeros(N,1)+1;
+sub=zeros(N,1);
 sub(1:end-1)=1;
 sub(end-1)=2;
 middle=zeros(N,1);
@@ -75,7 +75,7 @@ toc;
 
 % solve sparse (much quicker!)
 tic;
-Psi_f=(L_sparse-spdiags(zeros(N,1)+1/lambda^2,[1],N,N))\((rho+N_dot)/k_0/k_Si-1/lambda^2*(Psi_g+Psi_bi));
+Psi_f=(L_sparse-spdiags(zeros(N,1)+1/lambda^2,0,N,N))\((rho+N_dot)/k_0/k_Si-1/lambda^2*(Psi_g+Psi_bi));
 toc;
 %% Plot
 figure, plot((0:N-1).*a,Psi_f);
