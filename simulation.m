@@ -1,5 +1,5 @@
 %% constants, lenth in nm, energy in eV
-N=1001;           % # of grid points
+N=500;          % # of grid points
 
 E_f=0.01;       % fermi energy in eV
 E_g=0.1;        % band gap in eV
@@ -14,7 +14,7 @@ k_ox=3.9;       % dielectric constant oxide
 geo=1;          % Geometriefaktor # of gates, 'w' wrapgate
 l_ch=10;        % channel length
 l_ds=10;        % length of drain and source regions
-N_dot=0;
+N_dot=0;        % # Dopands
 
 
 lambda=sqrt(k_Si/k_ox*d_ch*d_ox/geo); 
