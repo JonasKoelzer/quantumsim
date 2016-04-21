@@ -1,11 +1,11 @@
 %% constants, lenth in nm, energy in eV
-N=1000;          % # of grid points
+N=171;          % # of grid points
 
 E_f=0.05;       % fermi energy in eV
 E_g=1;        % band gap in eV
 V_ds=0.5;       % drain-source voltage in V
 V_g=0;          % gate potential Psi_g=-e*V_g in eV
-d_ox=1;         % oxide thickness in nm
+d_ox=5;         % oxide thickness in nm
 d_ch=5;        % channel thickness in nm
 e=util.const.e; % elementary charge 
 k_0=8.85e-12;   % dielectric constant
@@ -78,7 +78,7 @@ Psi_0=max(Psi_f);
 epsilon=10e-15;         % tolarance for fermi function
 E_fs=0.05;  %?????
 E_fd=-V_ds+0.05;
-T=200;  %temperature in Kelvin
+T=300;  %temperature in Kelvin
 dE=0.001; % energy step
 
 E_max=E_fs-util.const.k_b*T*log(epsilon)/util.const.e;

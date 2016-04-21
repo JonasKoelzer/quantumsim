@@ -6,10 +6,10 @@ classdef quantumsim < handle
         %constants, lenth in nm, energy in eV
         % # of grid points
         a=0.5;
-        E_f=0.05;       % fermi energy in eV
+        E_f=0.15;       % fermi energy in eV
         E_g=1;        % band gap in eV
         V_ds=0.5;       % drain-source voltage in V
-        V_g=0.7;          % gate potential Psi_g=-e*V_g in eV
+        V_g=2;          % gate potential Psi_g=-e*V_g in eV
         d_ox=5;         % oxide thickness in nm
         d_ch=5;        % channel thickness in nm
         e=util.const.e; % elementary charge
@@ -17,7 +17,7 @@ classdef quantumsim < handle
         k_Si=11.2;     % dielectric constant for Silicon
         k_ox=3.9;       % dielectric constant oxide
         geo=1;          % Geometriefaktor # of gates, 'w' wrapgate
-        l_ch=30;        % channel length
+        l_ch=40;        % channel length
         l_ds=40;        % length of drain and source regions
         N_dot=0;        % # Dopands
         lambda
@@ -74,7 +74,7 @@ classdef quantumsim < handle
         
         function get_N(self)
             l_g=2*self.l_ds+self.l_ch;
-            self.N=floor(l_g/(self.a));
+            self.N=floor(l_g/(self.a))+1;
             
             self.n_left=floor(self.l_ds/self.a);      % source region 1 to n-left
             self.n_right = self.N - self.n_left;       % drain region n_right-end
@@ -159,14 +159,65 @@ classdef quantumsim < handle
             S=1/p(1);
         end
         
+        function plot_Vds_I(self,min,max,step)
+            I=[];
+            for V=min:step:max
+                self.set_V_ds(V);
+                self.calc_potential();
+                I(end+1)=self.calc_current();
+            end
+            x=min:step:max;
+            y=I;                    
+            figure, plot(x,y);                                      
+        end
+        
         function plot_S(self)
             S=[];
-            for l=5:50
+            for l=15:5:100
                 set_l_ch(self,l);
                 S(end+1)=self.plot_Vg_I(0,1,0.01);
             end
-            figure,plot(5:50,S);
+            figure,plot(15:5:100,S);
         end
+        
+        %task 3
+        function task3(self)
+            
+            self.set_l_ch(40);
+            %check other stuff!
+            Vg_min=0;
+            Vg_max=1;
+            Vg_step=0.1;
+            
+            Vd_min=0;
+            Vd_max=1;
+            Vd_step=0.01;
+            
+            figure();
+            hold on;
+            
+            for Vd=Vg_min:Vg_step:Vg_max
+            self.set_V_g(Vd);
+            I=[];
+            for V=Vd_min:Vd_step:Vd_max
+                self.set_V_ds(V);
+                self.calc_potential();
+                I(end+1)=self.calc_current();
+            end
+            x=Vd_min:Vd_step:Vd_max;
+            y=I;                          
+            plot(x,y);                      %# Plot the data
+                         %# Add to the plot                       
+            end
+            hold off;
+            
+            self.plot_S();
+            
+        end
+        
+        
+        
+        
         
     end
     

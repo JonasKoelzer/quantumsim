@@ -1,5 +1,5 @@
 %% constants, lenth in nm, energy in eV
-N=1000;          % # of grid points
+N=171;          % # of grid points
 
 E_f=0.05;       % fermi energy in eV
 E_g=1;        % band gap in eV
