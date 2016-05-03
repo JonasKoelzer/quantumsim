@@ -219,7 +219,10 @@ classdef quantumsim < handle
         end
         
         function calc_green(self)
-            self.E=0:0.000001:0.0004;
+            delta_E = 0.0000001;
+            self.E=0.0168:delta_E:0.017;
+            self.a=0.2;
+            self.N=125;
             super=zeros(self.N,1);
             super(2:end)=1;
             sub=zeros(self.N,1);
@@ -227,20 +230,22 @@ classdef quantumsim < handle
             middle=zeros(self.N,1);
             middle(:)=-2;
             pot = zeros(self.N,1);
-            eta = 0.0000008*(1i);
-            m=0.9*util.const.m_e;
+            pot(51:75)=1;
+            eta = 0.00000008*(1i);
+            m=0.2*util.const.m_e;
             t = util.const.h_bar^2/(2*m*(self.a*10^(-9))^2*util.const.e);
             self.H=-t.*spdiags([super,middle,sub],[1,0,-1],self.N,self.N)+spdiags(pot,0,self.N,self.N);
             self.G_r= zeros(length(self.E),self.N);
             for k=1:length(self.E)
                 self.G_r(k,:) = imag(diag(inv(spdiags(ones(self.N,1)*...
-                    self.E(k)+eta,0,self.N,self.N)-self.H)/self.a)); 
+                    self.E(k)+eta,0,self.N,self.N)-self.H)/self.a));
             end
-            figure,imagesc(self.G_r);
+            
+            figure,imagesc(-1/pi*self.G_r);
             colorbar();
             set(gca,'Ydir','Normal');
             
-            disp(-1/pi*sum(self.G_r(:))*self.a*0.000001)
+            disp(-1/pi*sum(self.G_r(:))*self.a*delta_E)
         end
         
         
