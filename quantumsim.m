@@ -8,8 +8,8 @@ classdef quantumsim < handle
         a=0.5;
         E_f=0.15;       % fermi energy in eV
         E_g=1;        % band gap in eV
-        V_ds=0.5;       % drain-source voltage in V
-        V_g=2;          % gate potential Psi_g=-e*V_g in eV
+        V_ds=0.;       % drain-source voltage in V
+        V_g=0;          % gate potential Psi_g=-e*V_g in eV
         d_ox=5;         % oxide thickness in nm
         d_ch=5;        % channel thickness in nm
         e=util.const.e; % elementary charge
@@ -35,12 +35,18 @@ classdef quantumsim < handle
         E_fd
         T=300;  %temperature in Kelvin
         dE=0.001; % energy step
+        DOS
         
         E_max
         E
         % From here: (Eigenenergies)
         H
-        G_r
+        G_r_diag
+        G_r_1N
+        t
+        k_sa
+        k_da
+        m=0.9*util.const.m_e;
     end
     
     properties (Dependent)
@@ -50,11 +56,13 @@ classdef quantumsim < handle
     methods
         function self =  quantumsim() %constructor
             self.get_lambda();
+            self.l_ds=floor(self.lambda)*15.;
             self.get_N();
             self.get_laplacian();
             self.E_fd=-self.V_ds+0.05;
             self.E_max=self.E_fs-util.const.k_b*self.T*log(self.epsilon)/util.const.e;
             self.E=self.Psi_0:self.dE:self.E_max;
+            self.t = util.const.h_bar^2/(2*self.m*(self.a*10^(-9))^2*util.const.e);
         end
         
         function get_lambda(self)
@@ -109,10 +117,11 @@ classdef quantumsim < handle
                 ((self.rho+self.N_dot)/self.k_0/self.k_Si-1/self.lambda^2*(self.Psi_g+self.Psi_bi));
             %toc;
             self.Psi_0=max(self.Psi_f);
-            self.E=self.Psi_0:self.dE:self.E_max;
+            
         end
         
         function I = calc_current(self)
+            self.E=self.Psi_0:self.dE:self.E_max;
             f_s = @(E) 1./(exp((E-self.E_fs).*util.const.e./util.const.k_b./self.T)+1);
             f_d = @(E) 1./(exp((E-self.E_fd).*util.const.e./util.const.k_b./self.T)+1);
             I=2*util.const.e/util.const.h*sum(f_s(self.E)-f_d(self.E))*self.dE*util.const.e*1e-3;
@@ -218,32 +227,105 @@ classdef quantumsim < handle
             
         end
         
-        function calc_green(self)
-            self.E=0:0.000001:0.0004;
+        function calc_green(self, verbose)
+            self.E=min(self.Psi_f):self.dE:0.7*self.E_max;
+            
+            
+            %self.set_l_ch(100);
+             
             super=zeros(self.N,1);
             super(2:end)=1;
             sub=zeros(self.N,1);
             sub(1:end-1)=1;
             middle=zeros(self.N,1);
             middle(:)=-2;
-            pot = zeros(self.N,1);
-            eta = 0.0000008*(1i);
-            m=0.9*util.const.m_e;
-            t = util.const.h_bar^2/(2*m*(self.a*10^(-9))^2*util.const.e);
-            self.H=-t.*spdiags([super,middle,sub],[1,0,-1],self.N,self.N)+spdiags(pot,0,self.N,self.N);
-            self.G_r= zeros(length(self.E),self.N);
-            for k=1:length(self.E)
-                self.G_r(k,:) = imag(diag(inv(spdiags(ones(self.N,1)*...
-                    self.E(k)+eta,0,self.N,self.N)-self.H)/self.a)); 
-            end
-            figure,imagesc(self.G_r);
-            colorbar();
-            set(gca,'Ydir','Normal');
             
-            disp(-1/pi*sum(self.G_r(:))*self.a*0.000001)
+                  
+            %pot = zeros(self.N,1);
+            pot = self.Psi_f;
+            eta = (1i*1e-8);
+           
+            Phi_0s=self.Psi_f(1);
+            Phi_0d=self.Psi_f(end);
+            
+            faktor_rechts=1;
+            faktor_links=1;
+            
+            self.t = util.const.h_bar^2/(2*self.m*(self.a*10^(-9))^2*util.const.e);
+            self.H=-self.t.*spdiags([super,middle,sub],[1,0,-1],self.N,self.N)+spdiags(pot,0,self.N,self.N);
+            self.G_r_diag = zeros(length(self.E),self.N);
+            self.G_r_1N = zeros(length(self.E),self.N,2);
+            
+            c1=self.H(1);
+            c2=self.H(end);
+            
+            self.k_da=acos(-(2*self.t-self.E+Phi_0d)/2./self.t);
+            self.k_sa=acos(-(2*self.t-self.E+Phi_0s)/2./self.t);
+            
+            for k=1:length(self.E)
+                
+                %linker Kontakt
+                if self.E(k)>=self.Psi_f(1)
+                    %self.k_sa=acos(-(2*self.t-self.E(k)+Phi_0s)/2./self.t);
+                    self.H(1)=c1+faktor_links*self.t*exp(1i*self.k_sa(k)); 
+                else
+                    self.H(1)=c1;
+                end
+                
+                %rechter Kontakt
+                if self.E(k)>=self.Psi_f(end)                   
+                    %self.k_da=acos(-(2*self.t-self.E(k)+Phi_0d)/2./self.t);          
+                    self.H(end)=c2+faktor_rechts*self.t*exp(1i*self.k_da(k));
+                else
+                    self.H(end)=c2;
+                end
+                
+                temp=inv(spdiags(ones(self.N,1)*...
+                    self.E(k)+eta,0,self.N,self.N)-self.H);
+                
+                self.G_r_diag(k,:) = imag(diag(temp/self.a)); 
+                self.G_r_1N(k,:,1) = abs(temp(:,1).^2);
+                self.G_r_1N(k,:,2) = abs(temp(:,end).^2);
+                
+            end
+            
+            %self.DOS=1/pi*self.G_r;
+            
+            if (nargin>1)
+                disp(verbose);
+                figure();
+                hold on
+                imagesc(1:self.N,self.E,1/pi*self.G_r_diag);
+                plot(1:self.N,self.Psi_f,'r','LineWidth',2);
+                xlim(gca,[1 self.N]);
+                ylim(gca,[self.E(1) self.E(end)]);
+                hold off
+                
+                colorbar();
+                set(gca,'Ydir','Normal');
+            end
+          
+            
+            %Ladungstr?gerdichte
+           
+            
+            %figure, plot(n)
         end
         
+        function calc_n(self)
+            f = @(E) 1./(exp((E).*util.const.e./util.const.k_b./self.T)+1);
+           
+            mask=self.E>self.Psi_f(1);
+            
+            n1 = (1/pi*self.G_r_diag')*f(self.E-self.E_f)'*self.dE/self.a*1e9; %mal dE
+            disp('stop');
+            n=1/pi*(self.t*sin(self.k_sa.*mask)*self.G_r_1N(:,:,1)*f(self.E_fs)+...
+                self.t*sin(self.k_da.*mask)*self.G_r_1N(:,:,2)*f(self.E_fd))*self.dE/self.a*1e9;
+            figure, plot(1:self.N,(n));
+            
+        end
         
+        %set a, N functionen 
         
         
     end
