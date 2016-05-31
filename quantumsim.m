@@ -227,18 +227,20 @@ classdef quantumsim < handle
             
         end
         
+
+        
         function calc_green(self, verbose)
             self.E=min(self.Psi_f):self.dE:0.7*self.E_max;
             
             
             %self.set_l_ch(100);
-             
             super=zeros(self.N,1);
             super(2:end)=1;
             sub=zeros(self.N,1);
             sub(1:end-1)=1;
             middle=zeros(self.N,1);
             middle(:)=-2;
+
             
                   
             %pot = zeros(self.N,1);
@@ -310,6 +312,7 @@ classdef quantumsim < handle
            
             
             %figure, plot(n)
+
         end
         
         function calc_n(self)
